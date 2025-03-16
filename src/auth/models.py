@@ -3,18 +3,6 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field, Column
 import sqlalchemy.dialects.postgresql as pg
 
-"""
-class User:
-    uid: uuid.UUID
-    username: str
-    email: str
-    first_name: str
-    last_name: str
-    is_verufied: bool = False
-    created_at: datetime
-    updated_at: datetime
-"""
-
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
