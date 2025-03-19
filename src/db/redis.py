@@ -16,6 +16,7 @@ async def token_in_blocklist(jti: str) -> bool:
     jti = await token_blocklist.get(jti)
     return jti is not None
 
+
 # admin
 [
     "adding users",
