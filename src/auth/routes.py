@@ -3,9 +3,16 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
+from aiosmtplib.errors import SMTPResponseException
 
 from .service import UserService
-from .schemas import UserModel, UserCreateModel, UserLoginModel, UserBooksModel
+from .schemas import (
+    UserModel,
+    UserCreateModel,
+    UserLoginModel,
+    UserBooksModel,
+    EmailModel,
+)
 from .utils import create_access_token, decode_token, verify_password
 from .dependencies import (
     RefreshTokenBearer,
@@ -16,12 +23,27 @@ from .dependencies import (
 from src.db.main import get_session
 from src.db.redis import add_jti_to_blocklist
 from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials, InvalidToken
+from src.mail import mail, create_message
 
 auth_router = APIRouter()
 user_service = UserService()
 role_checker = RoleChecker(["admin", "user"])
 
 REFRESH_TOKEN_EXPIRY = 2
+
+
+@auth_router.post("/send-mail")
+async def send_mail(
+    emails: EmailModel,
+):
+    emails = emails.addresses
+    html = "<h1>Wecome to the app</h1>"
+    message = create_message(recipients=emails, subject="Wecome", body=html)
+    try:
+        await mail.send_message(message)
+    except SMTPResponseException as exc:
+        print("SMTPResponseException ignored:", exc)
+    return {"message": "Email send successfully"}
 
 
 @auth_router.post(
