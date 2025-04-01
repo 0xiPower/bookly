@@ -7,16 +7,17 @@ from aiosmtplib.errors import SMTPResponseException
 
 from .service import UserService
 from .schemas import (
-    UserModel,
     UserCreateModel,
     UserLoginModel,
     UserBooksModel,
     EmailModel,
+    PasswordResetRequestModel,
+    PasswordResetConfirmModel,
 )
 from .utils import (
     create_access_token,
-    decode_token,
     verify_password,
+    gennerate_passwd_hash,
     create_url_safe_token,
     decode_url_safe_token,
 )
@@ -166,4 +167,67 @@ async def revoke_token(token_datails: dict = Depends(AccessTokenBearer())):
     await add_jti_to_blocklist(jti)
     return JSONResponse(
         content={"message": "Logged Our Successfully"}, status_code=status.HTTP_200_OK
+    )
+
+
+"""
+1. PROVIDE THE EMAIL -> password reset reques
+2. SEND PASSWORD RESET LINK
+3. RESET PASSWORD -> password reset confirm
+"""
+
+
+@auth_router.post("/password-reset-request")
+async def password_reset_request(email_data: PasswordResetRequestModel):
+    email = email_data.email
+    token = create_url_safe_token({"email": email})
+    link = f"http://{Config.DOMAIN}/api/v1/auth/password-reset-confirm/{token}"
+    html_message = f"""
+    <h1>Reset Your Password</h1>
+    <p>Please click this <a href="{link}">link</a> to Reset</p>
+    """
+    message = create_message(
+        recipients=[email], subject="Reset Your Password", body=html_message
+    )
+    try:
+        await mail.send_message(message)
+    except SMTPResponseException as exc:
+        print("SMTPResponseException ignored:", exc)
+    return JSONResponse(
+        content={
+            "message": "please check your email for instructions to reset your password"
+        },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@auth_router.post("/password-reset-confirm/{token}")
+async def resrt_account_password(
+    token: str,
+    password: PasswordResetConfirmModel,
+    session: AsyncSession = Depends(get_session),
+):
+    new_password = password.new_password
+    confirm_password = password.confirm_new_password
+
+    if new_password != confirm_password:
+        raise HTTPException(
+            detail="Passwords do not match",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    token_data = decode_url_safe_token(token)
+    user_email = token_data.get("email")
+    if user_email:
+        user = await user_service.get_user_by_email(user_email, session)
+        if not user:
+            raise UserNotFound()
+        password_hash = gennerate_passwd_hash(new_password)
+        await user_service.update_user(user, {"password_hash": password_hash}, session)
+        return JSONResponse(
+            content={"message": "Password reset Successfully"},
+            status_code=status.HTTP_200_OK,
+        )
+    return JSONResponse(
+        content={"message": "Error occured during Password reset"},
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )

@@ -39,3 +39,12 @@ class UserLoginModel(BaseModel):
 
 class EmailModel(BaseModel):
     addresses: List[str]
+
+
+class PasswordResetRequestModel(BaseModel):
+    email: str = Field(max_length=40)
+
+
+class PasswordResetConfirmModel(BaseModel):
+    new_password: str
+    confirm_new_password: str
