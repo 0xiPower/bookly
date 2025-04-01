@@ -5,6 +5,7 @@ Revises: 9efb227b7045
 Create Date: 2025-03-19 23:13:00.831986
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -13,8 +14,8 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cd82f290f33e'
-down_revision: Union[str, None] = '9efb227b7045'
+revision: str = "cd82f290f33e"
+down_revision: Union[str, None] = "9efb227b7045"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

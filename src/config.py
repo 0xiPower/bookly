@@ -23,5 +23,7 @@ class Settings(BaseSettings):
     USE_CREDENTIALS: bool = True
     VALIDATE_CERTS: bool = True
 
+    DOMAIN: str
+
 
 Config = Settings()

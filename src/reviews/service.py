@@ -30,7 +30,7 @@ class ReviewService:
             if not book:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Book not found", 
+                    detail="Book not found",
                 )
             if not user:
                 raise HTTPException(

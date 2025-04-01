@@ -19,7 +19,9 @@ class User(SQLModel, table=True):
         sa_column=Column(pg.VARCHAR, nullable=False, server_default="user")
     )
     is_verufied: bool = Field(default=False)
-    password_hash: str = Field(sa_column=Column(pg.VARCHAR, nullable=False), exclude=True)
+    password_hash: str = Field(
+        sa_column=Column(pg.VARCHAR, nullable=False), exclude=True
+    )
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     books: List["Book"] = Relationship(

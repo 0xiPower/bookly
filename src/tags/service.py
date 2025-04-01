@@ -17,7 +17,6 @@ server_error = HTTPException(
 
 
 class TagService:
-
     async def get_tags(self, session: AsyncSession):
         statement = select(Tag).order_by(desc(Tag.created_at))
         result = await session.exec(statement)
