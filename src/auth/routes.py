@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -31,7 +31,9 @@ from src.db.main import get_session
 from src.db.redis import add_jti_to_blocklist
 from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials, InvalidToken
 from src.mail import mail, create_message
+from src.celery_tasks import send_email
 from src.config import Config
+
 
 auth_router = APIRouter()
 user_service = UserService()
@@ -46,11 +48,10 @@ async def send_mail(
 ):
     emails = emails.addresses
     html = "<h1>Wecome to the app</h1>"
-    message = create_message(recipients=emails, subject="Wecome", body=html)
-    try:
-        await mail.send_message(message)
-    except SMTPResponseException as exc:
-        print("SMTPResponseException ignored:", exc)
+    subject = "Welcome to the app"
+    # message = create_message(recipients=emails, subject="Wecome", body=html)
+    # await mail.send_message(message)
+    send_email.delay(emails, subject, html)
     return {"message": "Email send successfully"}
 
 
@@ -60,7 +61,9 @@ async def send_mail(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_user_account(
-    user_data: UserCreateModel, session: AsyncSession = Depends(get_session)
+    user_data: UserCreateModel,
+    bg_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
 ):
     """
     Create user account using email, username, first name, last name
@@ -74,17 +77,18 @@ async def create_user_account(
     new_user = await user_service.create_user(user_data, session)
     token = create_url_safe_token({"email": email})
     link = f"http://{Config.DOMAIN}/api/v1/auth/verify/{token}"
-    html_message = f"""
+    html = f"""
     <h1>Verify your Email</h1>
     <p>Please click this <a href="{link}">link</a> to verify your email</p>
     """
-    message = create_message(
-        recipients=[email], subject="Verify you email", body=html_message
-    )
-    try:
-        await mail.send_message(message)
-    except SMTPResponseException as exc:
-        print("SMTPResponseException ignored:", exc)
+    # message = create_message(
+    #     recipients=[email], subject="Verify you email", body=html_message
+    # )
+    # bg_tasks.add_task(mail.send_message, message)
+    emails = [email]
+    subject = "Verify you email"
+
+    send_email.delay(emails, subject, html)
     return {
         "message": "Account Created! Check email to verify your account",
         "user": new_user,
