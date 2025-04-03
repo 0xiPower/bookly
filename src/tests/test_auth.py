@@ -6,7 +6,7 @@ auth_prefix = f"/api/v1/auth"
 def test_user_creation(fake_session, fake_user_service, test_client):
     signup_data = {
         "username": "ma123",
-        "email": "sunk1ng@foxmail.com",
+        "email": "xxxxxx@mail.com",
         "first_name": "jasder",
         "last_name": "both",
         "password": "test123",
